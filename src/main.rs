@@ -49,12 +49,12 @@ fn main() {
                                 file_path.clone(),
                                 Fragment {
                                     center: Vector2::new(
-                                        rectangle.center().x as f32,
-                                        rectangle.center().y as f32,
+                                        (rectangle.center().x - (rectangle.width() - image.width() as i32)/2) as f32,
+                                        (rectangle.center().y - (rectangle.height() - image.height() as i32)/2) as f32
                                     ),
                                     size: Vector2::new(
-                                        rectangle.size().width as f32,
-                                        rectangle.size().height as f32,
+                                        image.width() as f32,
+                                        image.height() as f32,
                                     ),
                                 },
                             );
