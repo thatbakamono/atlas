@@ -1,7 +1,6 @@
 use std::{collections::HashMap, fs, path::PathBuf};
 
 use clap::{Parser, Subcommand, ValueEnum};
-use etagere::{size2, AtlasAllocator};
 use image::GenericImageView;
 use serde::Serialize;
 
@@ -28,11 +27,17 @@ fn main() {
 
                 match algorithm {
                     Algorithm::Etagere => {
-                        let mut allocator = AtlasAllocator::new(size2(width as i32, height as i32));
+                        let mut allocator = etagere::AtlasAllocator::new(etagere::size2(
+                            width as i32,
+                            height as i32,
+                        ));
 
                         for (file_path, image) in images {
                             let allocation = allocator
-                                .allocate(size2(image.width() as i32, image.height() as i32))
+                                .allocate(etagere::size2(
+                                    image.width() as i32,
+                                    image.height() as i32,
+                                ))
                                 .expect("Failed to allocate atlas space");
 
                             let rectangle = allocation.rectangle;
@@ -49,18 +54,58 @@ fn main() {
                                 file_path.clone(),
                                 Fragment {
                                     center: Vector2::new(
-                                        (rectangle.center().x - (rectangle.width() - image.width() as i32)/2) as f32,
-                                        (rectangle.center().y - (rectangle.height() - image.height() as i32)/2) as f32
+                                        (rectangle.center().x
+                                            - (rectangle.width() - image.width() as i32) / 2)
+                                            as f32,
+                                        (rectangle.center().y
+                                            - (rectangle.height() - image.height() as i32) / 2)
+                                            as f32,
                                     ),
-                                    size: Vector2::new(
-                                        image.width() as f32,
-                                        image.height() as f32,
-                                    ),
+                                    size: Vector2::new(image.width() as f32, image.height() as f32),
                                 },
                             );
                         }
                     }
-                    Algorithm::Guillotiere => unimplemented!(),
+                    Algorithm::Guillotiere => {
+                        let mut allocator = guillotiere::AtlasAllocator::new(guillotiere::size2(
+                            width as i32,
+                            height as i32,
+                        ));
+
+                        for (file_path, image) in images {
+                            let allocation = allocator
+                                .allocate(guillotiere::size2(
+                                    image.width() as i32,
+                                    image.height() as i32,
+                                ))
+                                .expect("Failed to allocate atlas space");
+
+                            let rectangle = allocation.rectangle;
+
+                            image.pixels().for_each(|(x, y, pixel)| {
+                                atlas.put_pixel(
+                                    rectangle.min.x as u32 + x,
+                                    rectangle.min.y as u32 + y,
+                                    pixel,
+                                );
+                            });
+
+                            fragments.insert(
+                                file_path.clone(),
+                                Fragment {
+                                    center: Vector2::new(
+                                        (rectangle.center().x
+                                            - (rectangle.width() - image.width() as i32) / 2)
+                                            as f32,
+                                        (rectangle.center().y
+                                            - (rectangle.height() - image.height() as i32) / 2)
+                                            as f32,
+                                    ),
+                                    size: Vector2::new(image.width() as f32, image.height() as f32),
+                                },
+                            );
+                        }
+                    }
                 }
 
                 atlas.save(&atlas_output).unwrap();
